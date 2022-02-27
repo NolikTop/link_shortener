@@ -22,6 +22,20 @@ class Config {
 		$this->contents = $this->load();
 	}
 
+	public function get(string $field): array{
+		return $this->contents[$field];
+	}
+
+	public function fillObject(string $field, object $obj): object{
+		$data = $this->get($field);
+
+		foreach ($data as $key => $value){
+			$obj->{$key} = $value;
+		}
+
+		return $obj;
+	}
+
 	/**
 	 * @throws ConfigException
 	 */
