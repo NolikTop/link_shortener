@@ -13,11 +13,16 @@ class Mysql {
 	/** @var mysqli */
 	protected static $db;
 
-	public static function init(string $host, string $user, string $password, string $db, int $port): void{
-		self::$db = new mysqli($host, $user, $password, $db, $port);
+	public static function init(MysqlCredentials $credentials): void {
+		self::$db = new mysqli(
+			$credentials->host,
+			$credentials->user, $credentials->password,
+			$credentials->db,
+			$credentials->port
+		);
 	}
 
-	public static function get(): mysqli{
+	public static function get(): mysqli {
 		return self::$db;
 	}
 
