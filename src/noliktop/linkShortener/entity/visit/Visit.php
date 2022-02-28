@@ -54,7 +54,7 @@ class Visit extends Entity {
 		$this->createdAt = $row["created_at"];
 	}
 
-	public function prepareFetch(mysqli $db): mysqli_stmt {
+	public function prepareLoadById(mysqli $db): mysqli_stmt {
 		$q = $db->prepare(<<<QUERY
 select * from visits where id = ?
 QUERY

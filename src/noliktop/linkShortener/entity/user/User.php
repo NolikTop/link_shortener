@@ -48,8 +48,7 @@ class User extends Entity {
 		$userId = $_SESSION["user_id"];
 
 		$user = new User();
-		$user->setId($userId);
-		$user->fetch($db);
+		$user->loadById($userId, $db);
 
 		return $user;
 	}
@@ -87,7 +86,7 @@ QUERY
 		$this->passwordHash = $row["password_hash"];
 	}
 
-	public function prepareFetch(mysqli $db): mysqli_stmt {
+	public function prepareLoadById(mysqli $db): mysqli_stmt {
 		$q = $db->prepare(<<<QUERY
 select * from users where id = ?
 QUERY

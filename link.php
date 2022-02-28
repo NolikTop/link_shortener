@@ -6,6 +6,7 @@ use noliktop\linkShortener\auth\Redirect;
 use noliktop\linkShortener\db\Mysql;
 use noliktop\linkShortener\entity\link\Link;
 use noliktop\linkShortener\entity\user\User;
+use noliktop\linkShortener\render\LinkRenderer;
 
 require "autoload.php";
 
@@ -20,30 +21,8 @@ $db = Mysql::get();
 $user = User::getCurrent($db);
 
 $link = new Link();
-$link->setId($linkId);
-$link->fetch($db);
+$link->loadById($linkId, $db);
 
 $visits = $link->getVisits($db);
-$destinationUrl = $link->getDestinationUrl();
-?>
 
-<h1>Ссылка #<?= $link->getId() ?></h1>
-<p>
-	Короткая ссылка:
-	<a href="<?= $link->getFullShortLink() ?>" target="_blank">
-		<?= $link->getFullShortLink() ?>
-	</a>
-</p>
-<p>Исходная ссылка:
-	<a href="<?= $destinationUrl ?>" target="_blank">
-		<?= $destinationUrl ?>
-	</a>
-</p>
-
-<h2>Посещения (<?= count($visits) ?>)</h2>
-<?php foreach ($visits as $visit): ?>
-	<h3>Посещение #<?= $visit->getId() ?> в <?= $visit->getCreatedAt() ?></h3>
-	<p>IP: <?= $visit->getIp() ?></p>
-	<p>Useragent: <?= $visit->getUseragent() ?></p>
-	<br/>
-<?php endforeach; ?>
+echo LinkRenderer::renderLinkWithVisits($link, $visits);

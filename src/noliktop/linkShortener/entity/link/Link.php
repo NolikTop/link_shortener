@@ -98,7 +98,7 @@ class Link extends Entity {
 		$this->destinationUrl = $row["destination_url"];
 	}
 
-	public function prepareFetch(mysqli $db): mysqli_stmt {
+	public function prepareLoadById(mysqli $db): mysqli_stmt {
 		$q = $db->prepare(<<<QUERY
 select * from links where id = ? 
 QUERY

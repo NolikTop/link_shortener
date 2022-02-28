@@ -27,8 +27,10 @@ abstract class Entity {
 	/**
 	 * @throws EntityException
 	 */
-	public function fetch(mysqli $db): void{
-		$q = $this->prepareFetch($db);
+	public function loadById(int $id, mysqli $db): void{
+		$this->id = $id;
+
+		$q = $this->prepareLoadById($db);
 
 		if (!$q->execute()) {
 			throw new EntityException("Cant load: $db->error");
@@ -43,7 +45,7 @@ abstract class Entity {
 		$this->loadFromRow($result->fetch_assoc());
 	}
 
-	abstract public function prepareFetch(mysqli $db): mysqli_stmt;
+	abstract public function prepareLoadById(mysqli $db): mysqli_stmt;
 
 	/**
 	 * @throws EntityException
