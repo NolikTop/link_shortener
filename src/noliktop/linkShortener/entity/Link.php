@@ -6,6 +6,7 @@ declare(strict_types=1);
 namespace noliktop\linkShortener\entity;
 
 
+use Exception;
 use mysqli;
 
 class Link implements Entity {
@@ -18,6 +19,31 @@ class Link implements Entity {
 
 	/** @var string */
 	protected $destinationUrl;
+
+	/**
+	 * todo отрефачить
+	 * @throws Exception
+	 */
+	public static function fromShortLink(string $shortLink, mysqli $db): ?self{
+		$q = $db->prepare("select * from links where short_link = ? limit 1");
+
+		$q->bind_param("s", $shortLink);
+
+		if(!$q->execute()){
+			throw new Exception("db err: " . $db->error);
+		}
+
+		$r = $q->get_result();
+		$t = $r->fetch_assoc();
+		if($t === null){
+			return null;
+		}
+
+		$link = new Link();
+		$link->load($t);
+
+		return $link;
+	}
 
 	public function load(array $row): void {
 		$this->id = (int)$row["id"];

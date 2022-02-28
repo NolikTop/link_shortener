@@ -14,10 +14,12 @@ class Mysql {
 	protected static $db;
 
 	public static function init(MysqlCredentials $credentials): void {
+		var_dump($credentials);
+
 		self::$db = new mysqli(
 			$credentials->host,
 			$credentials->user, $credentials->password,
-			$credentials->db,
+			$credentials->database,
 			$credentials->port
 		);
 	}

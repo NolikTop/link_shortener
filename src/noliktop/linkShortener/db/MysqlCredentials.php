@@ -18,7 +18,7 @@ class MysqlCredentials {
 	public $password;
 
 	/** @var string */
-	public $db;
+	public $database;
 
 	/** @var int */
 	public $port;

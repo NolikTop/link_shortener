@@ -10,20 +10,18 @@ use mysqli;
 
 class UseragentsTable implements Table {
 
-	public function createIfNotExists(mysqli $db): void {
-		$db->query(<<<QUERY
-create table `useragents` (
+	public function getQueryForCreateIfNotExists(): string {
+		return <<<QUERY
+create table if not exists useragents (
     id int unsigned not null auto_increment primary key,
     useragent text not null
 )
-QUERY
-);
+QUERY;
 	}
 
-	public function drop(mysqli $db): void {
-		$db->query(<<<QUERY
-drop table `useragents`
-QUERY
-);
+	public function getQueryForDropIfExists(): string {
+		return <<<QUERY
+drop table if exists useragents
+QUERY;
 	}
 }

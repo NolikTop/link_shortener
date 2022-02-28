@@ -10,21 +10,20 @@ use mysqli;
 
 class UsersTable implements Table {
 
-	public function createIfNotExists(mysqli $db): void {
-		$db->query(<<<QUERY
+	public function getQueryForCreateIfNotExists(): string {
+		// password_hash 64 байта, так как sha256
+		return <<<QUERY
 create table if not exists users (
     id int unsigned not null auto_increment primary key,
     login varchar(32) not null,
-    password_hash binary(256) not null
+    password_hash binary(64) not null
 )
-QUERY
-		);
+QUERY;
 	}
 
-	public function drop(mysqli $db): void {
-		$db->query(<<<QUERY
-drop table users
-QUERY
-		);
+	public function getQueryForDropIfExists(): string {
+		return <<<QUERY
+drop table if exists users
+QUERY;
 	}
 }

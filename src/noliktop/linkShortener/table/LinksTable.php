@@ -10,8 +10,8 @@ use mysqli;
 
 class LinksTable implements Table {
 
-	public function createIfNotExists(mysqli $db): void {
-		$db->query(<<<QUERY
+	public function getQueryForCreateIfNotExists(): string {
+		return <<<QUERY
 create table if not exists links (
     id int unsigned not null auto_increment primary key,
     short_url varchar(16) not null,
@@ -19,14 +19,12 @@ create table if not exists links (
     owner_id int unsigned not null,
     foreign key (owner_id) references users(id)
 )
-QUERY
-		);
+QUERY;
 	}
 
-	public function drop(mysqli $db): void {
-		$db->query(<<<QUERY
-drop table links
-QUERY
-);
+	public function getQueryForDropIfExists(): string {
+		return <<<QUERY
+drop table if exists links
+QUERY;
 	}
 }
