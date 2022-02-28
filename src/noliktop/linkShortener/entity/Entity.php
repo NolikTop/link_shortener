@@ -10,8 +10,16 @@ use mysqli;
 
 interface Entity {
 
+	public function getId(): int;
+
 	public function load(array $row): void;
+
+	public function loadById(mysqli $db): void;
+
 	public function insert(mysqli $db): void;
+
 	public function update(mysqli $db): void;
+
+	public function delete(mysqli $db): void;
 
 }

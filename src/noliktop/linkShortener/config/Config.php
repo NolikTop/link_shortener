@@ -6,8 +6,6 @@ declare(strict_types=1);
 namespace noliktop\linkShortener\config;
 
 
-use JsonException;
-
 class Config {
 
 	protected $path;
@@ -16,20 +14,20 @@ class Config {
 	/**
 	 * @throws ConfigException
 	 */
-	public function __construct(string $path){
+	public function __construct(string $path) {
 		$this->path = $path;
 
 		$this->contents = $this->load();
 	}
 
-	public function get(string $field): array{
+	public function get(string $field): array {
 		return $this->contents[$field];
 	}
 
-	public function fillObject(string $field, object $obj): object{
+	public function fillObject(string $field, object $obj): object {
 		$data = $this->get($field);
 
-		foreach ($data as $key => $value){
+		foreach ($data as $key => $value) {
 			$obj->{$key} = $value;
 		}
 
@@ -45,11 +43,12 @@ class Config {
 			throw new ConfigException("Couldn't read config file");
 		}
 
-		try {
-			return json_decode($contents, true, 512, JSON_THROW_ON_ERROR);
-		} catch (JsonException $e) {
-			throw new ConfigException("Couldn't parse config file", 0, $e);
+		$json = json_decode($contents, true, 512); // я бы использовал JSON_THROW_ON_ERROR, но в тз указано php >= 7.2
+		if (!isset($json)) {
+			throw new ConfigException(json_last_error_msg());
 		}
+
+		return $json;
 	}
 
 }

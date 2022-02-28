@@ -6,8 +6,6 @@ declare(strict_types=1);
 namespace noliktop\linkShortener\table;
 
 
-use mysqli;
-
 class UsersTable implements Table {
 
 	public function getQueryForCreateIfNotExists(): string {
@@ -15,8 +13,8 @@ class UsersTable implements Table {
 		return <<<QUERY
 create table if not exists users (
     id int unsigned not null auto_increment primary key,
-    login varchar(32) not null,
-    password_hash binary(64) not null
+    login varchar(32) not null unique,
+    password_hash binary(32) not null
 )
 QUERY;
 	}

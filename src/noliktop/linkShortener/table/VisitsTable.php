@@ -21,9 +21,10 @@ class VisitsTable implements Table {
 create table if not exists visits (
  	id int unsigned not null primary key auto_increment,
  	ip varchar(15) not null,
+ 	link_id int unsigned not null,
+ 	useragent text not null,
  	created_at timestamp not null default current_timestamp,
- 	useragent_id int unsigned not null,
- 	foreign key (useragent_id) references useragents(id)
+ 	foreign key (link_id) references links(id)
 )
 QUERY;
 	}
