@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use noliktop\linkShortener\auth\Redirect;
 use noliktop\linkShortener\db\Mysql;
-use noliktop\linkShortener\entity\Link;
-use noliktop\linkShortener\entity\User;
+use noliktop\linkShortener\entity\link\Link;
+use noliktop\linkShortener\entity\user\User;
 
 require "autoload.php";
 
@@ -19,8 +19,9 @@ if ($linkId === 0) {
 $db = Mysql::get();
 $user = User::getCurrent($db);
 
-$link = new Link($linkId);
-$link->loadById($db);
+$link = new Link();
+$link->setId($linkId);
+$link->fetch($db);
 
 $visits = $link->getVisits($db);
 $destinationUrl = $link->getDestinationUrl();
@@ -38,6 +39,7 @@ $destinationUrl = $link->getDestinationUrl();
 		<?= $destinationUrl ?>
 	</a>
 </p>
+
 <h2>Посещения (<?= count($visits) ?>)</h2>
 <?php foreach ($visits as $visit): ?>
 	<h3>Посещение #<?= $visit->getId() ?> в <?= $visit->getCreatedAt() ?></h3>

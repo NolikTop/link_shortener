@@ -9,8 +9,8 @@ require 'autoload.php';
 
 $db = Mysql::get();
 
-$creator = new TablesInstaller();
-$creator->recreateTables($db);
+TablesInstaller::init();
+TablesInstaller::recreateTables($db);
 
 session_destroy();
 

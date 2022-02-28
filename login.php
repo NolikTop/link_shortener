@@ -9,6 +9,7 @@ require 'autoload.php';
 Redirect::redirectIfRegistered();
 
 ?>
+
 <h1>Авторизация</h1>
 <form action="api/login.php" method="post">
 	<label for="login">Логин</label>

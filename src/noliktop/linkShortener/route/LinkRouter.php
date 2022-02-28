@@ -8,7 +8,7 @@ namespace noliktop\linkShortener\route;
 
 use Exception;
 use noliktop\linkShortener\db\Mysql;
-use noliktop\linkShortener\entity\Link;
+use noliktop\linkShortener\entity\link\Link;
 
 class LinkRouter {
 
@@ -32,19 +32,27 @@ class LinkRouter {
 
 		$link = Link::fromShortLink(self::getPath(), $db);
 		if (!isset($link)) {
-			echo "no such link";
-			return;
+			http_response_code(404);
+			die;
 		}
 
 		$dstUrl = $link->getDestinationUrl();
 
-		$ip = $_SERVER['REMOTE_ADDR'];
-		$useragent = $_SERVER['HTTP_USER_AGENT'];
+		$ip = self::getIp();
+		$useragent = self::getUserAgent();
 
-		$link->addVisit($db, $ip, $useragent);
+		$link->addVisit($ip, $useragent, $db);
 
 		header("Location: $dstUrl");
 		die;
+	}
+
+	public static function getIp(): string {
+		return $_SERVER['REMOTE_ADDR'];
+	}
+
+	public static function getUserAgent(): string{
+		return $_SERVER['HTTP_USER_AGENT'];
 	}
 
 }

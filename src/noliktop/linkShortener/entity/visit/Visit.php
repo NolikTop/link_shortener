@@ -3,12 +3,15 @@
 declare(strict_types=1);
 
 
-namespace noliktop\linkShortener\entity;
+namespace noliktop\linkShortener\entity\visit;
 
 
 use mysqli;
+use mysqli_stmt;
+use noliktop\linkShortener\entity\Entity;
+use noliktop\linkShortener\entity\EntityException;
 
-class Visit implements Entity {
+class Visit extends Entity {
 
 	/** @var int */
 	protected $id;
@@ -25,11 +28,25 @@ class Visit implements Entity {
 	/** @var string */
 	protected $createdAt;
 
+	/**
+	 * @throws EntityException
+	 */
+	public static function create(string $ip, int $linkId, string $useragent, mysqli $db): Visit {
+		$visit = new Visit();
+		$visit->ip = $ip;
+		$visit->linkId = $linkId;
+		$visit->useragent = $useragent;
+
+		$visit->insert($db);
+
+		return $visit;
+	}
+
 	public function getId(): int {
 		return $this->id;
 	}
 
-	public function load(array $row): void {
+	protected function loadFromRow(array $row): void {
 		$this->id = (int)$row["id"];
 		$this->ip = $row["ip"];
 		$this->linkId = (int)$row["link_id"];
@@ -37,10 +54,7 @@ class Visit implements Entity {
 		$this->createdAt = $row["created_at"];
 	}
 
-	/**
-	 * @throws VisitException
-	 */
-	public function loadById(mysqli $db): void {
+	public function prepareFetch(mysqli $db): mysqli_stmt {
 		$q = $db->prepare(<<<QUERY
 select * from visits where id = ?
 QUERY
@@ -48,55 +62,37 @@ QUERY
 
 		$q->bind_param("i", $this->id);
 
-		if (!$q->execute()) {
-			throw new VisitException("Coudln't load by id $this->id: $db->error");
-		}
-
-		$result = $q->get_result();
-		if ($result->num_rows === 0) {
-			throw new VisitException("No visit with id $this->id");
-		}
-
-		$this->load($result->fetch_assoc());
+		return $q;
 	}
 
-	/**
-	 * @throws VisitException
-	 */
-	public function insert(mysqli $db): void {
+	protected function prepareInsert(mysqli $db): mysqli_stmt {
 		$q = $db->prepare(<<<QUERY
 insert into visits (ip, link_id, useragent) values (?, ?, ?)
 QUERY
 		);
 		$q->bind_param("sis", $this->ip, $this->linkId, $this->useragent);
 
-		if (!$q->execute()) {
-			throw new VisitException("Db error: $db->error");
-		}
+		return $q;
 	}
 
-	public function update(mysqli $db): void {
+	protected function prepareUpdate(mysqli $db): mysqli_stmt {
 		$q = $db->prepare(<<<QUERY
 update visits set ip = ?, link_id = ?, useragent = ? where id = ?
 QUERY
 		);
 		$q->bind_param("sisi", $this->ip, $this->linkId, $this->useragent, $this->id);
 
-		if (!$q->execute()) {
-			throw new VisitException("Db error: $db->error");
-		}
+		return $q;
 	}
 
-	public function delete(mysqli $db): void {
+	protected function prepareDelete(mysqli $db): mysqli_stmt {
 		$q = $db->prepare(<<<QUERY
 delete from visits where id = ?
 QUERY
 		);
 		$q->bind_param("i", $this->id);
 
-		if (!$q->execute()) {
-			throw new VisitException("Db error: $db->error");
-		}
+		return $q;
 	}
 
 	/**

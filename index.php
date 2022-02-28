@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use noliktop\linkShortener\auth\Redirect;
 use noliktop\linkShortener\db\Mysql;
-use noliktop\linkShortener\entity\User;
+use noliktop\linkShortener\entity\user\User;
 use noliktop\linkShortener\route\LinkRouter;
 
 require 'autoload.php';

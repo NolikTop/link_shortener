@@ -12,6 +12,6 @@ $login = $_POST["login"] ?? "";
 $password = $_POST["password"] ?? "";
 
 $db = Mysql::get();
-Auth::tryRegister($login, $password, $db, "../register.php");
+Auth::tryRegister($login, $password, "../register.php", $db);
 
 Redirect::redirectIfRegistered();

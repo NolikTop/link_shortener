@@ -6,6 +6,8 @@ declare(strict_types=1);
 namespace noliktop\linkShortener\auth;
 
 
-class AuthException extends \Exception {
+use Exception;
+
+class AuthException extends Exception {
 
 }

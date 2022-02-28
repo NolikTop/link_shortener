@@ -3,17 +3,19 @@
 declare(strict_types=1);
 
 
-namespace noliktop\linkShortener\entity;
+namespace noliktop\linkShortener\entity\user;
 
 
 use mysqli;
+use mysqli_stmt;
 use noliktop\linkShortener\auth\Auth;
+use noliktop\linkShortener\auth\Password;
+use noliktop\linkShortener\entity\Entity;
+use noliktop\linkShortener\entity\EntityException;
+use noliktop\linkShortener\entity\link\Link;
 use noliktop\linkShortener\table\TableException;
 
-class User implements Entity {
-
-	/** @var int */
-	protected $id;
+class User extends Entity {
 
 	/** @var string */
 	protected $login;
@@ -21,17 +23,13 @@ class User implements Entity {
 	/** @var string */
 	protected $passwordHash;
 
-	public function __construct(int $id = 0) {
-		$this->id = $id;
-	}
-
 	/**
-	 * @throws TableException
+	 * @throws EntityException
 	 */
 	public static function create(string $login, string $password, mysqli $db): User {
 		$user = new User();
 		$user->login = $login;
-		$user->passwordHash = Auth::hashPassword($password);
+		$user->passwordHash = Password::hash($password);
 
 		$user->insert($db);
 
@@ -40,57 +38,66 @@ class User implements Entity {
 
 	/**
 	 * @throws UserException
+	 * @throws EntityException
 	 */
 	public static function getCurrent(mysqli $db): User {
-		if (!self::isLogged()) {
+		if (!Auth::isLogged()) {
 			throw new UserException("No user in this session");
 		}
 
 		$userId = $_SESSION["user_id"];
 
-		$user = new User($userId);
-		$user->loadById($db);
+		$user = new User();
+		$user->setId($userId);
+		$user->fetch($db);
 
 		return $user;
-	}
-
-	public static function isLogged(): bool {
-		return session_status() === PHP_SESSION_ACTIVE && isset($_SESSION["user_id"]);
-	}
-
-	public function load(array $row): void {
-		$this->id = (int)$row["id"];
-		$this->login = $row["login"];
-		$this->passwordHash = $row["password_hash"];
 	}
 
 	/**
 	 * @throws UserException
 	 */
-	public function loadById(mysqli $db): void {
+	public static function getByLogin(string $login, mysqli $db): User{
+		$q = $db->prepare(<<<QUERY
+select * from users where login = ?
+QUERY
+		);
+
+		$q->bind_param("s", $login);
+
+		if (!$q->execute()) {
+			throw new UserException("Couldn't find user by login $login: $db->error");
+		}
+
+		$result = $q->get_result();
+		if ($result->num_rows === 0) {
+			throw new UserException("No user with login $login");
+		}
+
+		$user = new User();
+		$t = $result->fetch_assoc();
+		$user->loadFromRow($t);
+
+		return $user;
+	}
+
+	protected function loadFromRow(array $row): void {
+		$this->id = (int)$row["id"];
+		$this->login = $row["login"];
+		$this->passwordHash = $row["password_hash"];
+	}
+
+	public function prepareFetch(mysqli $db): mysqli_stmt {
 		$q = $db->prepare(<<<QUERY
 select * from users where id = ?
 QUERY
 		);
 		$q->bind_param("i", $this->id);
 
-		if (!$q->execute()) {
-			throw new UserException("Cant load: $db->error");
-		}
-
-		$result = $q->get_result();
-
-		if ($result->num_rows === 0) {
-			throw new UserException("No user with id $this->id");
-		}
-
-		$this->load($result->fetch_assoc());
+		return $q;
 	}
 
-	/**
-	 * @throws TableException
-	 */
-	public function insert(mysqli $db): void {
+	protected function prepareInsert(mysqli $db): mysqli_stmt {
 		$q = $db->prepare(<<<QUERY
 insert into users (login, password_hash) values (?, ?)
 QUERY
@@ -98,17 +105,10 @@ QUERY
 
 		$q->bind_param("ss", $this->login, $this->passwordHash);
 
-		if (!$q->execute()) {
-			throw new TableException("Cant insert: $db->error");
-		}
-
-		$this->id = $db->insert_id;
+		return $q;
 	}
 
-	/**
-	 * @throws TableException
-	 */
-	public function update(mysqli $db): void {
+	protected function prepareUpdate(mysqli $db): mysqli_stmt {
 		$q = $db->prepare(<<<QUERY
 update users set login = ?, password_hash = ? where id = ?
 QUERY
@@ -116,22 +116,15 @@ QUERY
 
 		$q->bind_param("ssi", $this->login, $this->passwordHash, $this->id);
 
-		if (!$q->execute()) {
-			throw new TableException("Cant update: $db->error");
-		}
+		return $q;
 	}
 
-	/**
-	 * @throws TableException
-	 */
-	public function delete(mysqli $db): void {
+	protected function prepareDelete(mysqli $db): mysqli_stmt {
 		$q = $db->prepare("delete from users where id = ?");
 
 		$q->bind_param("i", $this->id);
 
-		if (!$q->execute()) {
-			throw new TableException("Cant delete: $db->error");
-		}
+		return $q;
 	}
 
 	/**
@@ -156,23 +149,13 @@ QUERY
 		$result = $q->get_result();
 
 		$links = [];
+		/** @noinspection PhpAssignmentInConditionInspection */
 		while ($t = $result->fetch_assoc()) {
 			$links[] = $l = new Link();
-			$l->load($t);
+			$l->loadFromRow($t);
 		}
 
 		return $links;
-	}
-
-	/**
-	 * @return int
-	 * @throws UserException
-	 */
-	public function getId(): int {
-		if ($this->id === 0) {
-			throw new UserException("No id");
-		}
-		return $this->id;
 	}
 
 	/**

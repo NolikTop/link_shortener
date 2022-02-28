@@ -3,21 +3,22 @@
 declare(strict_types=1);
 
 
-namespace noliktop\linkShortener\entity;
+namespace noliktop\linkShortener\entity\link;
 
 
 use Exception;
 use mysqli;
-use noliktop\linkShortener\link\ShortLinkGenerator;
+use mysqli_stmt;
+use noliktop\linkShortener\entity\Entity;
+use noliktop\linkShortener\entity\EntityException;
+use noliktop\linkShortener\entity\user\User;
+use noliktop\linkShortener\entity\visit\Visit;
 use noliktop\linkShortener\table\TableException;
 use noliktop\linkShortener\tip\Tip;
 use noliktop\linkShortener\utils\Url;
 use Throwable;
 
-class Link implements Entity {
-
-	/** @var int */
-	protected $id;
+class Link extends Entity {
 
 	/** @var string */
 	protected $shortLink;
@@ -28,11 +29,7 @@ class Link implements Entity {
 	/** @var int */
 	protected $ownerId;
 
-	public function __construct(int $id = 0) {
-		$this->id = $id;
-	}
-
-	public static function tryCreate(string $url, int $shortLinkLength, User $owner, mysqli $db, string $failureUrl): Link {
+	public static function tryCreate(string $url, int $shortLinkLength, User $owner, string $failureUrl, mysqli $db): Link {
 		try {
 			return self::create($url, $shortLinkLength, $owner, $db);
 		} catch (Throwable $e) {
@@ -43,7 +40,7 @@ class Link implements Entity {
 	}
 
 	/**
-	 * @throws LinkException|UserException
+	 * @throws LinkException
 	 */
 	public static function create(string $url, int $shortLinkLength, User $owner, mysqli $db): Link {
 		$link = new Link();
@@ -90,43 +87,28 @@ class Link implements Entity {
 		}
 
 		$link = new Link();
-		$link->load($t);
+		$link->loadFromRow($t);
 
 		return $link;
 	}
 
-	public function load(array $row): void {
+	protected function loadFromRow(array $row): void {
 		$this->id = (int)$row["id"];
 		$this->shortLink = $row["short_link"];
 		$this->destinationUrl = $row["destination_url"];
 	}
 
-	/**
-	 * @throws LinkException
-	 */
-	public function loadById(mysqli $db): void {
+	public function prepareFetch(mysqli $db): mysqli_stmt {
 		$q = $db->prepare(<<<QUERY
 select * from links where id = ? 
 QUERY
 		);
 		$q->bind_param("i", $this->id);
 
-		if (!$q->execute()) {
-			throw new LinkException("Couldn't load link by id $this->id");
-		}
-
-		$result = $q->get_result();
-		if ($result->num_rows === 0) {
-			throw new LinkException("No link with id $this->id");
-		}
-
-		$this->load($result->fetch_assoc());
+		return $q;
 	}
 
-	/**
-	 * @throws TableException
-	 */
-	public function insert(mysqli $db): void {
+	protected function prepareInsert(mysqli $db): mysqli_stmt {
 		$q = $db->prepare(<<<QUERY
 insert into links (short_link, destination_url, owner_id) values (?, ?, ?)
 QUERY
@@ -134,17 +116,10 @@ QUERY
 
 		$q->bind_param("ssi", $this->shortLink, $this->destinationUrl, $this->ownerId);
 
-		if (!$q->execute()) {
-			throw new TableException($db->error);
-		}
-
-		$this->id = $q->insert_id;
+		return $q;
 	}
 
-	/**
-	 * @throws TableException
-	 */
-	public function update(mysqli $db): void {
+	protected function prepareUpdate(mysqli $db): mysqli_stmt {
 		$q = $db->prepare(<<<QUERY
 update links set short_link = ?, destination_url = ?, owner_id = ? where id = ?
 QUERY
@@ -152,29 +127,15 @@ QUERY
 
 		$q->bind_param("ssii", $this->shortLink, $this->destinationUrl, $this->ownerId, $this->id);
 
-		if (!$q->execute()) {
-			throw new TableException("Cant insert: $db->error");
-		}
+		return $q;
 	}
 
-	/**
-	 * @throws TableException
-	 */
-	public function delete(mysqli $db): void {
+	protected function prepareDelete(mysqli $db): mysqli_stmt {
 		$q = $db->prepare("delete from links where id = ?");
 
 		$q->bind_param("i", $this->id);
 
-		if (!$q->execute()) {
-			throw new TableException("Cant insert: $db->error");
-		}
-	}
-
-	/**
-	 * @return int
-	 */
-	public function getId(): int {
-		return $this->id;
+		return $q;
 	}
 
 	/**
@@ -192,6 +153,8 @@ QUERY
 	 * @param string $shortLink
 	 */
 	public function setShortLink(string $shortLink): void {
+		//todo validate
+
 		$this->shortLink = $shortLink;
 	}
 
@@ -210,6 +173,7 @@ QUERY
 		if (!filter_var($destinationUrl, FILTER_VALIDATE_URL)) {
 			throw new LinkException("Wrong url");
 		}
+
 		$this->destinationUrl = $destinationUrl;
 	}
 
@@ -232,28 +196,20 @@ QUERY
 		$result = $q->get_result();
 
 		$visits = [];
+		/** @noinspection PhpAssignmentInConditionInspection */
 		while ($t = $result->fetch_assoc()) {
 			$visits[] = $v = new Visit();
-			$v->load($t);
+			$v->loadFromRow($t);
 		}
 
 		return $visits;
 	}
 
 	/**
-	 * @throws LinkException
+	 * @throws EntityException
 	 */
-	public function addVisit(mysqli $db, string $ip, string $useragent): void {
-		$q = $db->prepare(<<<QUERY
-insert into visits (ip, link_id, useragent) values (?, ?, ?)
-QUERY
-		);
-
-		$q->bind_param("sis", $ip, $this->id, $useragent);
-
-		if (!$q->execute()) {
-			throw new LinkException("Couldn't add visit: $db->error");
-		}
+	public function addVisit(string $ip, string $useragent, mysqli $db): void {
+		Visit::create($ip, $this->getId(), $useragent, $db);
 	}
 
 	/**

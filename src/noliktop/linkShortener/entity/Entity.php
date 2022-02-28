@@ -7,19 +7,83 @@ namespace noliktop\linkShortener\entity;
 
 
 use mysqli;
+use mysqli_stmt;
 
-interface Entity {
+abstract class Entity {
 
-	public function getId(): int;
+	/** @var int */
+	protected $id;
 
-	public function load(array $row): void;
+	public function getId(): int{
+		return $this->id;
+	}
 
-	public function loadById(mysqli $db): void;
+	public function setId(int $id): void{
+		$this->id = $id;
+	}
 
-	public function insert(mysqli $db): void;
+	abstract protected function loadFromRow(array $row): void;
 
-	public function update(mysqli $db): void;
+	/**
+	 * @throws EntityException
+	 */
+	public function fetch(mysqli $db): void{
+		$q = $this->prepareFetch($db);
 
-	public function delete(mysqli $db): void;
+		if (!$q->execute()) {
+			throw new EntityException("Cant load: $db->error");
+		}
+
+		$result = $q->get_result();
+
+		if ($result->num_rows === 0) {
+			throw new EntityException("No entity with id $this->id");
+		}
+
+		$this->loadFromRow($result->fetch_assoc());
+	}
+
+	abstract public function prepareFetch(mysqli $db): mysqli_stmt;
+
+	/**
+	 * @throws EntityException
+	 */
+	public function insert(mysqli $db): void{
+		$q = $this->prepareInsert($db);
+
+		if (!$q->execute()) {
+			throw new EntityException($db->error);
+		}
+
+		$this->setId($db->insert_id);
+	}
+
+	abstract protected function prepareInsert(mysqli $db): mysqli_stmt;
+
+	/**
+	 * @throws EntityException
+	 */
+	public function update(mysqli $db): void{
+		$q = $this->prepareUpdate($db);
+
+		if (!$q->execute()) {
+			throw new EntityException($db->error);
+		}
+	}
+
+	abstract protected function prepareUpdate(mysqli $db): mysqli_stmt;
+
+	/**
+	 * @throws EntityException
+	 */
+	public function delete(mysqli $db): void{
+		$q = $this->prepareDelete($db);
+
+		if (!$q->execute()) {
+			throw new EntityException($db->error);
+		}
+	}
+
+	abstract protected function prepareDelete(mysqli $db): mysqli_stmt;
 
 }

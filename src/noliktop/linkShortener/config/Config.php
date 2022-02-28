@@ -43,7 +43,7 @@ class Config {
 			throw new ConfigException("Couldn't read config file");
 		}
 
-		$json = json_decode($contents, true, 512); // я бы использовал JSON_THROW_ON_ERROR, но в тз указано php >= 7.2
+		$json = json_decode($contents, true); // я бы использовал JSON_THROW_ON_ERROR, но в тз указано php >= 7.2
 		if (!isset($json)) {
 			throw new ConfigException(json_last_error_msg());
 		}

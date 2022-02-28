@@ -11,35 +11,35 @@ use mysqli;
 class TablesInstaller {
 
 	/** @var Table[] */
-	protected $tables = [];
+	protected static $tables = [];
 
-	public function __construct() {
-		$this->registerAll();
+	public static function init() {
+		self::registerAll();
 	}
 
-	public function registerAll(): void {
-		$this->register(new UsersTable());
-		$this->register(new LinksTable());
-		$this->register(new VisitsTable());
+	public static function registerAll(): void {
+		self::register(new UsersTable());
+		self::register(new LinksTable());
+		self::register(new VisitsTable());
 	}
 
-	protected function register(Table $table) {
-		$this->tables[] = $table;
-	}
-
-	/**
-	 * @throws TableException
-	 */
-	public function recreateTables(mysqli $db): void {
-		$this->dropTables($db);
-		$this->createTables($db);
+	protected static function register(Table $table) {
+		self::$tables[] = $table;
 	}
 
 	/**
 	 * @throws TableException
 	 */
-	public function createTables(mysqli $db): void {
-		foreach ($this->tables as $table) {
+	public static function recreateTables(mysqli $db): void {
+		self::dropTables($db);
+		self::createTables($db);
+	}
+
+	/**
+	 * @throws TableException
+	 */
+	public static function createTables(mysqli $db): void {
+		foreach (self::$tables as $table) {
 			$queryText = $table->getQueryForCreateIfNotExists();
 			$q = $db->query($queryText);
 
@@ -52,8 +52,8 @@ class TablesInstaller {
 	/**
 	 * @throws TableException
 	 */
-	public function dropTables(mysqli $db): void {
-		foreach (array_reverse($this->tables) as $table) {
+	public static function dropTables(mysqli $db): void {
+		foreach (array_reverse(self::$tables) as $table) {
 			$queryText = $table->getQueryForDropIfExists();
 			$q = $db->query($queryText);
 
@@ -63,8 +63,8 @@ class TablesInstaller {
 		}
 	}
 
-	public function getTables(): array {
-		return $this->tables;
+	public static function getTables(): array {
+		return self::$tables;
 	}
 
 }
